@@ -1,0 +1,31 @@
+# Personal configuration and credentials
+.env
+.env.*
+!.env.example
+*.local.json
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Dependencies, caches and generated output
+node_modules/
+.npm-cache/
+coverage/
+dist/
+*.log
+*.zip
+*.tar.gz
+
+# Operation journals, downloads and local workspace settings
+.redmine-state/
+.redmine-access/
+downloads/
+.codex/
+.agents/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.bak
+*.tmp

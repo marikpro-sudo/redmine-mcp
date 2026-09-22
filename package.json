@@ -1,0 +1,17 @@
+{
+  "name": "redmine-access",
+  "version": "0.2.1",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.16.0" },
+  "scripts": {
+    "test": "node --test",
+    "start": "node src/mcp.js",
+    "cli": "node src/cli.js",
+    "http": "node src/http.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "zod": "4.6.5"
+  }
+}

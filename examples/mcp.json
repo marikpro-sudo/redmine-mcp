@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "redmine": {
+      "command": "node",
+      "args": [
+        "--env-file=C:/Projects/redmine-mcp/.env",
+        "C:/Projects/redmine-mcp/src/mcp.js"
+      ]
+    }
+  }
+}
