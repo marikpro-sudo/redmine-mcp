@@ -186,9 +186,9 @@ test('MCP SDK handshake, discovery, defaults, tool call and errors', async t => 
   const [a, b] = InMemoryTransport.createLinkedPair();
   await server.connect(a); await client.connect(b);
   t.after(async () => { await client.close(); await server.close(); });
-  const { tools } = await client.listTools(); assert.equal(tools.length, 8);
+  const { tools } = await client.listTools(); assert.equal(tools.length, 11);
   assert.equal(tools.find(tool => tool.name === 'redmine_apply_change').annotations.readOnlyHint, false);
-  assert.ok(tools.filter(tool => !['redmine_apply_change', 'redmine_prepare_change'].includes(tool.name)).every(tool => tool.annotations.readOnlyHint));
+  assert.ok(tools.filter(tool => !['redmine_apply_change', 'redmine_prepare_change', 'redmine_prepare_create_issue', 'redmine_apply_create_issue'].includes(tool.name)).every(tool => tool.annotations.readOnlyHint));
   assert.ok(!(tools.find(t => t.name === 'redmine_list_issues').inputSchema.required || []).includes('status'));
   const result = await client.callTool({ name: 'redmine_list_issues', arguments: {} });
   assert.equal(result.isError, undefined); assert.ok(JSON.parse(result.content[0].text).total > 0);
@@ -201,7 +201,7 @@ test('real stdio process negotiates MCP and exposes tools', async t => {
     env: { REDMINE_URL: 'https://redmine.example.test', REDMINE_API_KEY: key }, stderr: 'pipe' });
   const client = new Client({ name: 'stdio-test', version: '1' });
   await client.connect(transport); t.after(() => client.close());
-  assert.equal((await client.listTools()).tools.length, 8);
+  assert.equal((await client.listTools()).tools.length, 11);
 });
 
 test('CLI schema and missing config: JSON output, nonzero error, no secret echo', async () => {

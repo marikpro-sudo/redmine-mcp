@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { AccessError } from './config.js';
 import { WriteService, writeDefinitions } from './write-service.js';
+import { CreateService, createDefinitions } from './create-service.js';
 
 const id = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
 const project = z.string().trim().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/);
@@ -19,14 +20,14 @@ export const definitions = {
     schema: z.object({ issue_id: id }).strict() },
   redmine_read_attachment: { description: 'Read a selected attachment belonging to a visible issue, max 5 MiB. UTF-8 text is returned as text, other files as base64. Does not execute files or extract PDF/Office text. No local file writes.',
     schema: z.object({ issue_id: id, attachment_id: id }).strict() },
-  ...writeDefinitions
+  ...writeDefinitions, ...createDefinitions
 };
 
 const ref = (value) => value ? { id: value.id, name: value.name } : null;
 const fields = (values = []) => values.map(f => ({ id: f.id, name: f.name, multiple: f.multiple, value: f.value }));
 
 export class RedmineService {
-  constructor(client) { this.client = client; this.config = client.config; this.writes = new WriteService(this); }
+  constructor(client) { this.client = client; this.config = client.config; this.writes = new WriteService(this); this.creations = new CreateService(this); }
 
   async invoke(name, args = {}) {
     if (!definitions[name]) throw new AccessError('UNKNOWN_TOOL', 'Unknown operation.');
@@ -34,6 +35,9 @@ export class RedmineService {
     if (!parsed.success) throw new AccessError('INVALID_ARGUMENTS', 'Invalid arguments. Check the operation schema; unknown fields are rejected.');
     const a = parsed.data;
     switch (name) {
+      case 'redmine_creation_context': return this.creations.context(a.project, a.status);
+      case 'redmine_prepare_create_issue': return this.creations.prepare(a);
+      case 'redmine_apply_create_issue': return this.creations.apply(a.operation_id);
       case 'redmine_me': return this.me();
       case 'redmine_catalog': return this.catalog();
       case 'redmine_list_issues': return this.list(a);

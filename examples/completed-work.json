@@ -1,0 +1,9 @@
+{
+  "tracker": "Доработка",
+  "status": "Новая",
+  "status_confirmed": false,
+  "subject": "Учебный пример — заменить перед отправкой",
+  "description": "Запрос и ожидаемый результат — указать реальные сведения",
+  "business_customer": "Выберите реальный ID из creation-context",
+  "sap_module": "FI"
+}

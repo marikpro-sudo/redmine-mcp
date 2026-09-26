@@ -2,13 +2,14 @@
 
 Корень публикуемого проекта — **integrations/redmine-access**, а не вся папка REDMINE.
 Соседние каталоги содержат рабочие выгрузки, списки пользователей, серверные скрипты
-и архивы; они не нужны для установки MCP.
+и архивы; они не нужны для установки MCP. Не публикуйте корневую папку REDMINE целиком.
 
 ## Состав
 
-В репозиторий входят `src/`, `test/`, `scripts/configure.ps1`, `examples/`,
+В репозиторий входят `src/`, `test/`, `scripts/configure.ps1`, `examples/`, `server/`,
 `package.json`, `package-lock.json`, `.env.example`, `.gitignore`, `.gitattributes`
 и документация. `.env`, зависимости и локальные журналы исключены через `.gitignore`.
+`server/` содержит только исходники серверного модуля и скрипты его обновления, без выгрузок и секретов.
 Флаг `private: true` в package.json защищает от случайной публикации в npm;
 приватность GitHub задаётся отдельно при создании репозитория.
 
@@ -35,7 +36,7 @@ git config --global --add safe.directory D:/Projects/REDMINE/integrations/redmin
 Добавьте только подготовленные файлы и проверьте состав:
 
 ```sh
-git add .gitignore .gitattributes .env.example package.json package-lock.json README.md INSTALL.md PUBLISHING.md COMMUNICATION.md src test examples scripts/configure.ps1
+git add .gitignore .gitattributes .env.example package.json package-lock.json README.md INSTALL.md PUBLISHING.md COMMUNICATION.md COMPLETED-WORK.md src test examples scripts/configure.ps1 server
 git diff --cached --stat
 git diff --cached
 git status --short --ignored

@@ -72,6 +72,34 @@ export class RedmineClient {
     throw new AccessError('WRITE_UNCERTAIN', 'Unexpected response to write. Inspect the issue before creating another operation.');
   }
 
+  async createIssue(issue) {
+    let response;
+    try {
+      response = await this.fetch(new URL('issues.json', this.config.baseUrl), {
+        method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(this.config.timeoutMs),
+        headers: { 'X-Redmine-API-Key': this.config.apiKey, Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ issue })
+      });
+    } catch { throw new AccessError('WRITE_UNCERTAIN', 'Creation outcome unknown. Do not resend.'); }
+    if (response.status !== 201) {
+      await response.body?.cancel().catch(() => {});
+      if ([401, 403, 404, 409, 422, 429].includes(response.status)) throw new AccessError(`HTTP_${response.status}`, 'Redmine rejected creation. Check permissions, required fields and workflow.');
+      throw new AccessError('WRITE_UNCERTAIN', 'Unexpected creation response. Do not resend.');
+    }
+    try {
+      if (!response.headers.get('content-type')?.includes('application/json')) throw new Error();
+      const chunks = []; let size = 0;
+      for await (const chunk of response.body ?? []) {
+        size += chunk.length;
+        if (size > this.config.maxJsonBytes) throw new Error();
+        chunks.push(chunk);
+      }
+      const data = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+      if (!Number.isSafeInteger(data.issue?.id) || data.issue.id <= 0) throw new Error();
+      return data.issue.id;
+    } catch { await response.body?.cancel().catch(() => {}); throw new AccessError('WRITE_UNCERTAIN', 'Creation acknowledged but issue ID could not be read. Do not resend.'); }
+  }
+
   async all(path, key, params = {}) {
     const items = []; const seen = new Set(); let offset = 0; let initialTotal;
     for (let page = 0; page < this.config.maxPages; page++) {

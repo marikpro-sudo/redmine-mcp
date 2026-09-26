@@ -34,7 +34,7 @@ export function createHttpServer(service, token) {
       try { args = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
       catch { reply(400, { error: { code: 'INVALID_ARGUMENTS', message: 'Expected JSON object.' } }); return; }
       const result = await service.invoke(match[1], args);
-      const status = match[1] !== 'redmine_apply_change' || result.state === 'applied' ? 200 :
+      const status = !['redmine_apply_change', 'redmine_apply_create_issue'].includes(match[1]) || result.state === 'applied' ? 200 :
         result.state === 'rejected' ? 409 : result.state === 'in_progress_or_uncertain' ? 202 : 502;
       reply(status, result);
     } catch (error) {

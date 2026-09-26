@@ -6,7 +6,7 @@ import { AccessError } from './config.js';
 export function digest(value) { return createHash('sha256').update(JSON.stringify(value)).digest('hex'); }
 
 // Stable across CLI/MCP/HTTP processes; key and server changes get a separate namespace.
-// An exclusive permanent claim ensures at most one PUT attempt per operation ID.
+// An exclusive permanent claim ensures at most one PUT/POST attempt per operation ID.
 export class OperationStore {
   constructor(config) {
     this.root = config.stateDir ? join(config.stateDir, digest([config.baseUrl, config.apiKey])) : null;

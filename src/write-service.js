@@ -24,7 +24,7 @@ export const writeDefinitions = {
     readOnly: false, destructive: true, idempotent: true, schema: operation
   },
   redmine_get_operation: {
-    description: 'Read a stored change preview and result. in_progress_or_uncertain means never resend automatically; inspect Redmine manually. This tool never writes to Redmine.',
+    description: 'Read a stored update or creation preview and result. in_progress_or_uncertain means never resend automatically; inspect Redmine manually. This tool never writes to Redmine.',
     schema: operation
   }
 };
@@ -96,6 +96,7 @@ export class WriteService {
 
   async apply(operationId) {
     const record = await this.store.read(operationId); const actor = await this.service.me();
+    if (record.kind === 'create_issue') throw new AccessError('OPERATION_KIND', 'Use redmine_apply_create_issue for creation operations.');
     if (actor.id !== record.actor_id) throw new AccessError('ACTOR_CHANGED', 'Operation belongs to another user.');
     const previous = await this.store.result(operationId);
     if (previous) return { operation_id: operationId, ...previous, replayed: true };
