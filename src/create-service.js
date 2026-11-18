@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { AccessError, safeError } from './config.js';
 import { creationPolicy } from './creation-policy.js';
+import { markupPolicy, assertMarkdown } from './markup-policy.js';
 
 const id = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
 const project = z.string().trim().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/).optional();
@@ -15,7 +16,7 @@ export const creationFields = {
 export const createDefinitions = {
   redmine_creation_context: { description: 'Read effective creation permissions, trackers, SAP fields and actual business customer candidates for the selected project. Requires the read-only redmine_completed_work server plugin.\n' + creationPolicy,
     schema: z.object({ project, status: named.optional() }).strict() },
-  redmine_prepare_create_issue: { description: 'Prepare a SAP issue locally in the explicitly confirmed status. Ask the user which status before EVERY creation, wait for the answer, then gather required real facts. Does not publish.\n' + creationPolicy,
+  redmine_prepare_create_issue: { description: 'Prepare a SAP issue locally in the explicitly confirmed status. Ask the user which status before EVERY creation, wait for the answer, then gather required real facts. Does not publish. description, acceptance_criteria, test_result and other text fields must be Markdown; Textile is rejected.\n' + markupPolicy + '\n' + creationPolicy,
     readOnly: false, destructive: false, idempotent: false,
     schema: z.object({ project, tracker: z.enum(['Ошибка', 'Доработка', 'Новая разработка', 'Консультация', 'Перенос SAP']),
       status: named, status_confirmed: z.literal(true), done_ratio: z.number().int().min(0).max(100).optional(),
@@ -110,6 +111,10 @@ export class CreateService {
   }
 
   async prepare(a) {
+    // Free-text values only; list values are validated against offered options later.
+    const customText = (a.custom_fields || []).flatMap(f => [f.value].flat().map(v => [`custom_fields[${f.id}]`, v]));
+    assertMarkdown([...Object.entries({ subject: a.subject, description: a.description, acceptance_criteria: a.acceptance_criteria,
+      dev_transports: a.dev_transports, test_system: a.test_system, test_result: a.test_result }), ...customText]);
     const actor = await this.service.me(); const context = await this.context(a.project, a.status);
     const payload = this.payload(a, context, actor);
     const input = { ...a, project: String(context.project.id), status: payload.status_id };

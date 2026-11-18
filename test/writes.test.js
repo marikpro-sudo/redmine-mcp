@@ -261,3 +261,15 @@ test('local HTTP exposes prepare/apply and does not report conflict as HTTP succ
   const result = await call('redmine_apply_change', { operation_id: plan.operation_id });
   assert.equal(result.status, 409); assert.equal((await result.json()).state, 'rejected');
 });
+
+test('Textile comment rejected before reading the issue or storing a draft; Markdown passes', async t => {
+  const { service, state, config } = await fixture(t);
+  const { readdir } = await import('node:fs/promises');
+  const before = await readdir(config.stateDir, { recursive: true });
+  for (const comment of ['h3. Итог\nТекст', 'Таблица\n|_. Поле |_. Значение |\n| a | b |', '  h2. Отступ']) {
+    await assert.rejects(draft(service, { comment }), e => e.code === 'TEXTILE_MARKUP' && /Markdown/.test(e.message) && /Черновик не создан/.test(e.message));
+  }
+  assert.equal(state.reads, 0); assert.deepEqual(await readdir(config.stateDir, { recursive: true }), before);
+  const plan = await draft(service, { comment: '## Итог\n\n1. Пункт\n- пункт\n\n**жирный**\n\n| Поле | Значение |\n|---|---|\n| a | b |\n\n```\nh2. пример в коде\n```' });
+  assert.equal(plan.state, 'prepared'); assert.equal(state.writes.length, 0);
+});

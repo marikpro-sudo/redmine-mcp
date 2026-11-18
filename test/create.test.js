@@ -295,3 +295,14 @@ test('generic fields respect visibility, read-only, offered values, multiplicity
   const p = await prepare(service, { custom_fields: [{ id: 40, value: ['9', '7'] }] });
   assert.equal((await apply(service, p)).state, 'applied');
 });
+
+test('Textile in description or other text fields rejected before context read; Markdown passes', async t => {
+  const { service, state } = await fixture(t);
+  for (const more of [{ description: 'h2. Цель\nТекст' }, { acceptance_criteria: '|_. Шаг |_. Ожидание |' }, { test_result: 'ok\nh4. Детали' },
+    { custom_fields: [{ id: 999, value: ['норма', 'h1. Заголовок'] }] }]) {
+    await assert.rejects(prepare(service, more), e => e.code === 'TEXTILE_MARKUP' && e.message.includes(Object.keys(more)[0]));
+  }
+  assert.equal(state.posts.length, 0);
+  const p = await prepare(service, { description: '## Цель\n\nДобавлен отбор.\n\n### Проверки\n- сценарий 1\n1. шаг\n\n| Поле | Было |\n|---|---|\n| A | B |' });
+  assert.equal(p.state, 'prepared'); assert.equal(state.posts.length, 0);
+});
