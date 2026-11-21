@@ -5,11 +5,11 @@ import { AccessError, safeError } from './config.js';
 import { z } from 'zod';
 import { readFile } from 'node:fs/promises';
 
-const aliases = { 'creation-context': 'redmine_creation_context', 'prepare-create': 'redmine_prepare_create_issue', 'apply-create': 'redmine_apply_create_issue', me: 'redmine_me', catalog: 'redmine_catalog', list: 'redmine_list_issues', issue: 'redmine_get_issue', attachment: 'redmine_read_attachment', prepare: 'redmine_prepare_change', apply: 'redmine_apply_change', operation: 'redmine_get_operation' };
+const aliases = { 'creation-context': 'redmine_creation_context', 'prepare-create': 'redmine_prepare_create_issue', 'apply-create': 'redmine_apply_create_issue', me: 'redmine_me', catalog: 'redmine_catalog', list: 'redmine_list_issues', issue: 'redmine_get_issue', attachment: 'redmine_read_attachment', prepare: 'redmine_prepare_change', rename: 'redmine_prepare_rename_issue', 'attach-file': 'redmine_prepare_attach_file', 'delete-attachment': 'redmine_prepare_delete_attachment', apply: 'redmine_apply_change', operation: 'redmine_get_operation' };
 try {
   const [command, input = '{}', ...extra] = process.argv.slice(2);
   if (!command || command === '--help') {
-    console.log('Usage: node [--env-file=.env] src/cli.js <command> [JSON or @file.json]\nCommands: me, catalog, list, issue, attachment, prepare, apply, operation, creation-context, prepare-create, apply-create, schema\nShort forms: issue 87; apply <operation-uuid>; operation <operation-uuid>\nprepare creates a local draft. apply writes the prepared changes to Redmine.\nOutput: JSON. Errors: stderr, exit code 1.');
+    console.log('Usage: node [--env-file=.env] src/cli.js <command> [JSON or @file.json]\nCommands: me, catalog, list, issue, attachment, prepare, rename, attach-file, delete-attachment, apply, operation, creation-context, prepare-create, apply-create, schema\nShort forms: issue 87; apply <operation-uuid>; operation <operation-uuid>\nprepare, rename, attach-file, delete-attachment create a local draft. apply writes the prepared changes to Redmine.\nOutput: JSON. Errors: stderr, exit code 1.');
   } else if (command === 'schema') {
     console.log(JSON.stringify(Object.fromEntries(Object.entries(definitions).map(([k, v]) => [k, { description: v.description, inputSchema: z.toJSONSchema(v.schema, { io: 'input' }) }])), null, 2));
   } else {

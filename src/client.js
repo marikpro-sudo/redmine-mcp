@@ -100,6 +100,53 @@ export class RedmineClient {
     } catch { await response.body?.cancel().catch(() => {}); throw new AccessError('WRITE_UNCERTAIN', 'Creation acknowledged but issue ID could not be read. Do not resend.'); }
   }
 
+  // POST /uploads.json: stores bytes without touching any issue; the token is attached by a later PUT.
+  // An orphaned upload (PUT never sent) is cleaned up by Redmine, so a failure here leaves the issue unchanged.
+  async uploadFile(bytes, filename) {
+    const url = new URL('uploads.json', this.config.baseUrl);
+    url.searchParams.set('filename', filename);
+    let response;
+    try {
+      response = await this.fetch(url, {
+        method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(Math.max(this.config.timeoutMs, 120000)),
+        headers: { 'X-Redmine-API-Key': this.config.apiKey, Accept: 'application/json', 'Content-Type': 'application/octet-stream' },
+        body: bytes
+      });
+    } catch { throw new AccessError('UPLOAD_FAILED', 'File upload did not complete. The issue was not changed.'); }
+    if (response.status !== 201) {
+      await response.body?.cancel().catch(() => {});
+      const messages = { 401: 'Authentication failed.', 403: 'Redmine denied file upload. Check the "Add attachments" permission.',
+        413: 'Redmine refused the file: larger than the server attachment size limit.',
+        422: 'Redmine refused the file: larger than the attachment size limit or forbidden extension.', 429: 'Redmine rate limit reached.' };
+      throw new AccessError(`HTTP_${response.status}`, messages[response.status] || 'File upload failed. The issue was not changed.');
+    }
+    let data;
+    try {
+      if (!response.headers.get('content-type')?.includes('application/json')) throw new Error();
+      data = JSON.parse((await response.text()).slice(0, 65536));
+    } catch { throw new AccessError('UPLOAD_FAILED', 'Upload response could not be read. The issue was not changed.'); }
+    if (typeof data.upload?.token !== 'string' || !data.upload.token) throw new AccessError('UPLOAD_FAILED', 'Upload token missing. The issue was not changed.');
+    return data.upload.token;
+  }
+
+  async deleteAttachment(attachmentId) {
+    if (!Number.isSafeInteger(attachmentId) || attachmentId <= 0) throw new AccessError('INVALID_ARGUMENTS', 'Invalid attachment ID.');
+    let response;
+    try {
+      response = await this.fetch(new URL(`attachments/${attachmentId}.json`, this.config.baseUrl), {
+        method: 'DELETE', redirect: 'manual', signal: AbortSignal.timeout(this.config.timeoutMs),
+        headers: { 'X-Redmine-API-Key': this.config.apiKey, Accept: 'application/json' }
+      });
+    } catch { throw new AccessError('WRITE_UNCERTAIN', 'Delete outcome unknown. Inspect the issue and operation; do not resend.'); }
+    await response.body?.cancel().catch(() => {});
+    if (response.status === 204 || response.status === 200) return;
+    const rejected = { 401: 'Authentication failed.', 403: 'Redmine denied deleting this attachment. Check the "Delete attachments"/edit permission.',
+      404: 'Attachment is missing or inaccessible.', 405: 'This Redmine version does not support deleting attachments via REST API.',
+      422: 'Redmine rejected deleting the attachment.', 429: 'Redmine rate limit reached.' };
+    if (rejected[response.status]) throw new AccessError(`HTTP_${response.status}`, rejected[response.status]);
+    throw new AccessError('WRITE_UNCERTAIN', 'Unexpected response to delete. Inspect the issue before creating another operation.');
+  }
+
   async all(path, key, params = {}) {
     const items = []; const seen = new Set(); let offset = 0; let initialTotal;
     for (let page = 0; page < this.config.maxPages; page++) {

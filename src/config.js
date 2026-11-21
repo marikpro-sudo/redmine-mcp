@@ -33,7 +33,8 @@ export async function loadConfig(env = process.env) {
     stateDir: env.REDMINE_STATE_DIR ? resolve(env.REDMINE_STATE_DIR) : join(homedir(), '.redmine-access', 'operations'),
     collaboratorFieldId: collaboratorFieldId ? Number(collaboratorFieldId) : undefined,
     timeoutMs: 20000, maxPages: 100, maxJsonBytes: 16 * 1024 * 1024,
-    maxAttachmentBytes: 5 * 1024 * 1024 };
+    maxAttachmentBytes: 5 * 1024 * 1024, maxUploadBytes: 20 * 1024 * 1024,
+    apiKeyFile: env.REDMINE_API_KEY_FILE ? resolve(env.REDMINE_API_KEY_FILE) : undefined };
 }
 
 export function safeError(error) {

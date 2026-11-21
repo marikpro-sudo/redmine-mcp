@@ -44,6 +44,9 @@ export class RedmineService {
       case 'redmine_get_issue': return this.issue(a.issue_id);
       case 'redmine_read_attachment': return this.attachment(a.issue_id, a.attachment_id);
       case 'redmine_prepare_change': return this.writes.prepare(a);
+      case 'redmine_prepare_rename_issue': return this.writes.prepareRename(a);
+      case 'redmine_prepare_attach_file': return this.writes.prepareAttach(a);
+      case 'redmine_prepare_delete_attachment': return this.writes.prepareDeleteAttachment(a);
       case 'redmine_apply_change': return this.writes.apply(a.operation_id);
       case 'redmine_get_operation': return this.writes.inspect(a.operation_id);
     }
